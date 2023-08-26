@@ -1,0 +1,31 @@
+{
+    "name": "sof3/await-rt",
+    "license": "Apache-2.0",
+    "type": "library",
+    "scripts": {
+        "fmt": "vendor/bin/php-cs-fixer fix",
+        "analyze": "vendor/bin/phpstan",
+        "test": "vendor/bin/phpunit",
+        "all": [
+            "composer fmt",
+            "composer analyze",
+            "composer test"
+        ]
+    },
+    "require": {
+        "php": "^8.2"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.4",
+        "phpstan/phpstan": "^1.2"
+    },
+    "autoload": {
+        "classmap": ["src"]
+    },
+    "extra": {
+        "virion": {
+            "spec": "3.0",
+            "namespace-root": "SOFe\\AwaitGenerator"
+        }
+    }
+}
