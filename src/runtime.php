@@ -4,42 +4,56 @@ declare(strict_types=1);
 
 namespace SOFe\AwaitRuntime;
 
-use Closure;
 use Generator;
 use RuntimeException;
-use Throwable;
 
-final class Await {
-	public static function run(Generator $generator) : void {
-		// TODO
+/**
+ * @internal
+ */
+final class Runtime {
+	/**
+	 * @param Generator<mixed, mixed, mixed, void>
+	 */
+	public function __construct(
+		public Generator $generator,
+		public State\State $state,
+		public bool $shouldTrace,
+	) {
 	}
 
-	/**
-	 * @template T
-	 * @param Closure(Closure(T): void, Closure(Throwable): void): void
-	 * @return Generator<Await, Await, Await, T>
-	 */
-	public static function promise(Closure $closure) : Generator {
-		$resolve = yield Protocol::RESOLVE;
-		$reject = yield Protocol::REJECT;
-		$closure($resolve, $reject);
-		return yield Protocol::ONCE;
-	}
+	public function wakeup() : void {
+		while ($this->state->resume($this) && $this->generator->valid()) {
+			// handle global messages in an inner loop without calling $this->state->resume() again
+			do {
+				$message = $this->generator->current();
+				if ($this->handleGlobal($message)) {
+					continue;
+				}
 
-	/**
-	 * @template T
-	 * @return Generator<Await, Await, Await, array{Closure(T), Closure(Throwable), Generator<Await, Await, Await, T>}>
-	 */
-	public static function callbackPair() : Generator {
-		$identity = yield Protocol::IDENTITY;
-		$resolve = yield Protocol::RESOLVE;
-		$reject = yield Protocol::REJECT;
-		return [$resolve, $reject, (function() use ($identity) {
-			if ($identity !== yield Protocol::IDENTITY) {
-				throw new RuntimeException("generator returned by callbackPair must be resumed in the same coroutine that called callbackPair");
+				break;
+			} while ($this->generator->valid());
+
+			// the generator might return after sending the last global message
+			if (!$this->generator->valid()) {
+				break;
 			}
-			return yield Protocol::ONCE;
-		})()];
+
+			$state = $this->state->handleMessage($this, $message);
+			if ($state === null) {
+				throw new RuntimeException("Unknown message: $message");
+			}
+
+			$this->state = $state;
+		}
+	}
+
+	private function handleGlobal(mixed $message) : bool {
+		if ($message === Protocol::IDENTITY) {
+			$this->generator->send($this);
+			return true;
+		}
+
+		return false;
 	}
 }
 
