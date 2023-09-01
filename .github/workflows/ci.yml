@@ -3,24 +3,8 @@ on:
   - push
   - pull_request
 jobs:
-  build-php:
-    name: Prepare PHP
-    runs-on: ubuntu-20.04
-    strategy:
-      matrix:
-        php:
-          - "8.2"
-    steps:
-      - name: Build and prepare PHP cache
-        uses: pmmp/setup-php-action@main
-        with:
-          php-version: ${{ matrix.php }}
-          install-path: "../bin"
-          pm-version-major: "5"
-
   fmt:
     name: code style check
-    needs: [build-php]
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -28,11 +12,11 @@ jobs:
           - "8.2"
     steps:
       - uses: actions/checkout@v3
-      - uses: pmmp/setup-php-action@main
+      - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          install-path: "../bin"
-          pm-version-major: "5"
+          tools: composer
+          coverage: xdebug2
       - name: Install Composer
         run: curl -sS https://getcomposer.org/installer | php
       - run: composer install
@@ -40,7 +24,6 @@ jobs:
       - run: git diff --exit-code
   phpstan:
     name: phpstan analyze
-    needs: [build-php]
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -48,11 +31,11 @@ jobs:
           - "8.2"
     steps:
       - uses: actions/checkout@v3
-      - uses: pmmp/setup-php-action@main
+      - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          install-path: "../bin"
-          pm-version-major: "5"
+          tools: composer
+          coverage: xdebug2
       - name: Install Composer
         run: curl -sS https://getcomposer.org/installer | php
       - run: composer install
@@ -60,7 +43,6 @@ jobs:
         run: composer analyze
   test:
     name: phpunit test
-    needs: [build-php]
     runs-on: ubuntu-20.04
     strategy:
       matrix:
@@ -68,13 +50,19 @@ jobs:
           - "8.2"
     steps:
       - uses: actions/checkout@v3
-      - uses: pmmp/setup-php-action@main
+      - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          install-path: "../bin"
-          pm-version-major: "5"
+          tools: composer
+          coverage: xdebug2
       - name: Install Composer
         run: curl -sS https://getcomposer.org/installer | php
       - run: composer install
-      - name: phpstan analyze
-        run: composer test
+      - name: run phpunit
+        run: vendor/bin/phpunit --coverage-clover=coverage.xml
+        env:
+          XDEBUG_MODE: coverage
+      - uses: codecov/codecov-action@v1
+        with:
+          token: ${{secrets.CODECOV_TOKEN}}
+          fail_ci_if_error: true
