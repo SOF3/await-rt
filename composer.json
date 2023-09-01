@@ -5,6 +5,7 @@
     "scripts": {
         "fmt": "vendor/bin/php-cs-fixer fix",
         "analyze": "vendor/bin/phpstan",
+        "baseline": "vendor/bin/phpstan --generate-baseline",
         "test": "vendor/bin/phpunit",
         "all": [
             "composer fmt",
@@ -17,7 +18,8 @@
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.4",
-        "phpstan/phpstan": "^1.2"
+        "phpstan/phpstan": "^1.2",
+        "phpunit/phpunit": "^10.3"
     },
     "autoload": {
         "classmap": ["src"]

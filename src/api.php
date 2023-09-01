@@ -20,38 +20,54 @@ final class Await {
 
 	/**
 	 * @template T
-	 * @param Closure(Closure(T): void, Closure(Throwable): void): void
+	 * @param Closure(Closure(T): void, Closure(Throwable): void): void $closure
 	 * @return Generator<Await, Await, Await, T>
 	 */
 	public static function promise(Closure $closure) : Generator {
+		/** @var Closure(T): void */
 		$resolve = yield Protocol::RESOLVE;
+		/** @var Closure(Throwable): void */
 		$reject = yield Protocol::REJECT;
 		$closure($resolve, $reject);
-		return yield Protocol::ONCE;
+
+		/** @var T */
+		$result = yield Protocol::ONCE;
+		return $result;
 	}
 
 	/**
 	 * @template T
-	 * @return Generator<Await, Await, Await, array{Closure(T), Closure(Throwable), Generator<Await, Await, Await, T>}>
+	 * @return Generator<Await, Await, Await, array{Closure(T): void, Closure(Throwable): void, Generator<Await, Await, Await, T>}>
 	 */
 	public static function callbackPair() : Generator {
 		$identity = yield from Await::currentCoroutine();
+		/** @var Closure(T): void */
 		$resolve = yield Protocol::RESOLVE;
+		/** @var Closure(Throwable): void */
 		$reject = yield Protocol::REJECT;
-		return [$resolve, $reject, (function() use ($identity) {
-			if ($identity !== yield from Await::currentCoroutine()) {
-				throw new RuntimeException("generator returned by callbackPair must be resumed in the same coroutine that called callbackPair");
-			}
-			return yield Protocol::ONCE;
-		})()];
+		return [$resolve, $reject, self::waitOnceWithidentity($identity)];
+	}
+
+	/**
+	 * @template T
+	 * @return Generator<Await, Await, Await, T>
+	 */
+	private static function waitOnceWithidentity(object $identity) : Generator {
+		if ($identity !== yield from Await::currentCoroutine()) {
+			throw new RuntimeException("generator returned by callbackPair must be resumed in the same coroutine that called callbackPair");
+		}
+		/** @var T */
+		return yield Protocol::ONCE;
 	}
 
 	/**
 	 * Returns an object that uniquely identifies the current coroutine.
 	 *
 	 * The only supported operations on the returned object are `===`, `spl_object_id` and `spl_object_hash`.
+	 *
+	 * @return Generator<Await, Await, Await, object>
 	 */
-	public static function currentCoroutine() : object {
+	public static function currentCoroutine() : Generator {
 		return yield Protocol::IDENTITY;
 	}
 }

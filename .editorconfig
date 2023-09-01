@@ -8,14 +8,14 @@ indent_size = 4
 indent_style = space
 indent_size = 4
 
-[*.yml]
-indent_style = space
-indent_size = 2
-
 [*.md]
 indent_style = space
 indent_size = 2
 
-[*.neon]
+[*.{yml,neon,neon.dist}]
+indent_style = space
+indent_size = 2
+
+[*.xml]
 indent_style = space
 indent_size = 2

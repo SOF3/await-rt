@@ -1,0 +1,11 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Template type T of method SOFe\\\\AwaitRuntime\\\\Await\\:\\:callbackPair\\(\\) is not referenced in a parameter\\.$#"
+			count: 1
+			path: src/api.php
+
+		-
+			message: "#^Template type T of method SOFe\\\\AwaitRuntime\\\\Await\\:\\:waitOnceWithidentity\\(\\) is not referenced in a parameter\\.$#"
+			count: 1
+			path: src/api.php

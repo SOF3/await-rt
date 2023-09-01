@@ -8,7 +8,7 @@ use Exception;
 use Throwable;
 
 final class Id {
-	public ?Result $result;
+	public ?Result $result = null;
 }
 
 interface Result {

@@ -12,7 +12,7 @@ use RuntimeException;
  */
 final class Runtime {
 	/**
-	 * @param Generator<mixed, mixed, mixed, void>
+	 * @param Generator<mixed, mixed, mixed, void> $generator
 	 */
 	public function __construct(
 		public Generator $generator,
@@ -47,6 +47,9 @@ final class Runtime {
 		}
 	}
 
+	/**
+	 * @phpstan-impure
+	 */
 	private function handleGlobal(mixed $message) : bool {
 		if ($message === Protocol::IDENTITY) {
 			$this->generator->send($this);

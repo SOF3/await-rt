@@ -1,7 +1,13 @@
 parameters:
-	level: 8
-	paths:
-		- src
+  level: 8
+  paths:
+    - src
+  ignoreErrors:
+    -
+      message: "#^Generator expects (key|value) type SOFe\\\\AwaitRuntime\\\\Await, (int|string) given\\.$#"
+      path: src/api.php
 
 includes:
-	- ./phpstan-baseline.neon
+  - ./phpstan-baseline.neon
+
+

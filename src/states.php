@@ -161,21 +161,21 @@ final class ReadySingle implements State {
 	public function __construct(private mixed $result) {
 	}
 
-		public function resume(Runtime $rt) : bool {
-			throw new RuntimeException("Unreachable code: ReadySingle is never returned in handleMessage");
+	public function resume(Runtime $rt) : bool {
+		throw new RuntimeException("Unreachable code: ReadySingle is never returned in handleMessage");
+	}
+
+	public function handleMessage(Runtime $rt, mixed $message) : ?State {
+		if ($message === Protocol::REJECT) {
+			return new ReadyDouble($this->result);
 		}
 
-		public function handleMessage(Runtime $rt, mixed $message) : ?State {
-			if ($message === Protocol::REJECT) {
-				return new ReadyDouble($this->result);
-			}
-
-			if ($message === Protocol::ONCE) {
-				return new Running(fn(Generator $generator) => $generator->send($this->result));
-			}
-
-			return null;
+		if ($message === Protocol::ONCE) {
+			return new Running(fn(Generator $generator) => $generator->send($this->result));
 		}
+
+		return null;
+	}
 }
 
 /**
@@ -185,61 +185,62 @@ final class ReadyDouble implements State {
 	public function __construct(private mixed $result) {
 	}
 
-		public function resume(Runtime $rt) : bool {
-			throw new RuntimeException("Unreachable code: ReadyDouble is never returned in handleMessage");
+	public function resume(Runtime $rt) : bool {
+		throw new RuntimeException("Unreachable code: ReadyDouble is never returned in handleMessage");
+	}
+
+	public function handleMessage(Runtime $rt, mixed $message) : ?State {
+		if ($message === Protocol::ONCE) {
+			return new Running(fn(Generator $generator) => $generator->send($this->result));
 		}
 
-		public function handleMessage(Runtime $rt, mixed $message) : ?State {
-			if ($message === Protocol::ONCE) {
-				return new Running(fn(Generator $generator) => $generator->send($this->result));
-			}
-
-			return null;
-		}
+		return null;
+	}
 }
 
 final class Failed implements State {
 	public function __construct(private Throwable $error) {
 	}
 
-		public function resume(Runtime $rt) : bool {
-			throw new RuntimeException("Unreachable code: Failed is never returned in handleMessage");
+	public function resume(Runtime $rt) : bool {
+		throw new RuntimeException("Unreachable code: Failed is never returned in handleMessage");
+	}
+
+	public function handleMessage(Runtime $rt, mixed $message) : ?State {
+		if ($message === Protocol::ONCE) {
+			return new Running(fn(Generator $generator) => $generator->throw($this->error));
 		}
 
-		public function handleMessage(Runtime $rt, mixed $message) : ?State {
-			if ($message === Protocol::ONCE) {
-				return new Running(fn(Generator $generator) => $generator->throw($this->error));
-			}
-
-			return null;
-		}
+		return null;
+	}
 }
 
 final class Pending implements State, SuspendResultAcceptor {
 	public function __construct(private SuspendSession\Id $ssid) {
 	}
 
-		public function resume(Runtime $rt) : bool {
-			return false;
-		}
+	public function resume(Runtime $rt) : bool {
+		return false;
+	}
 
-		public function handleMessage(Runtime $rt, mixed $message) : ?State {
-			throw new RuntimeException("resume() returns false");
-		}
+	public function handleMessage(Runtime $rt, mixed $message) : ?State {
+		throw new RuntimeException("resume() returns false");
+	}
 
-		public function suspendId() : Id {
-			return $this->ssid;
-		}
+	public function suspendId() : Id {
+		return $this->ssid;
+	}
 
-		public function onSuspendResult(Runtime $rt) : void {
-			if ($this->ssid->result instanceof SuspendSession\Rejected) {
-				$error = $this->ssid->result->error;
-				$rt->state = new Running(fn(Generator $generator) => $generator->throw($error));
-			} elseif ($this->ssid->result instanceof SuspendSession\Resolved) {
-				$value = $this->ssid->result->value;
-				$rt->state = new Running(fn(Generator $generator) => $generator->send($value));
-			} else {
-				throw new RuntimeException("Unexpected sealed interface implementation");
-			}
+	public function onSuspendResult(Runtime $rt) : void {
+		if ($this->ssid->result instanceof SuspendSession\Rejected) {
+			$error = $this->ssid->result->error;
+			$rt->state = new Running(fn(Generator $generator) => $generator->throw($error));
+		} elseif ($this->ssid->result instanceof SuspendSession\Resolved) {
+			$value = $this->ssid->result->value;
+			$rt->state = new Running(fn(Generator $generator) => $generator->send($value));
+		} else {
+			throw new RuntimeException("Unexpected sealed interface implementation");
 		}
+		$rt->wakeup();
+	}
 }
