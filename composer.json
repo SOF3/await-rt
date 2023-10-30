@@ -27,7 +27,7 @@
     "extra": {
         "virion": {
             "spec": "3.0",
-            "namespace-root": "SOFe\\AwaitGenerator"
+            "namespace-root": "SOFe\\AwaitRuntime"
         }
     }
 }
